@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <title>Permainan Checkers</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      color: #fff;
+    }
+
+    #login-screen {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .login-box {
+      background: white;
+      color: #333;
+      padding: 40px 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      text-align: center;
+      width: 300px;
+    }
+
+    .login-box h2 {
+      margin-bottom: 20px;
+    }
+
+    .login-box input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    .login-box button {
+      background: #2575fc;
+      color: white;
+      border: none;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 6px;
+      width: 100%;
+      cursor: pointer;
+    }
+
+    .login-box p {
+      font-size: 12px;
+      margin-top: 20px;
+      color: #777;
+    }
+
+    #game-screen {
+      display: none;
+      padding: 20px;
+      text-align: center;
+    }
+
+    #logout-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #e74c3c;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    #scoreboard {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(8, 60px);
+      grid-template-rows: repeat(8, 60px);
+      width: 480px;
+      margin: 20px auto;
+      border: 4px solid #333;
+    }
+
+    .square {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .light { background-color: #f0d9b5; }
+    .dark { background-color: #b58863; }
+
+    .piece {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .red { background-color: red; }
+    .black { background-color: black; }
+    .selected { outline: 3px solid yellow; }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      background: #111;
+      border-radius: 50%;
+      position: absolute;
+      z-index: 1;
+    }
+
+    .king-indicator {
+      width: 12px;
+      height: 12px;
+      background-color: white;
+      border-radius: 50%;
+    }
+
+    footer {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #eee;
+    }
+
+    #winner {
+      font-size: 20px;
+      margin-top: 10px;
+      color: #ff0;
+    }
+
+    /* Logout Confirmation Modal */
+    #logout-confirmation {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .confirm-box {
+      background: white;
+      color: #333;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      width: 280px;
+    }
+
+    .confirm-box h3 {
+      margin-bottom: 20px;
+    }
+
+    .confirm-box button {
+      margin: 5px 10px;
+      padding: 10px 16px;
+      font-size: 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-yes {
+      background-color: #e74c3c;
+      color: white;
+    }
+
+    .btn-no {
+      background-color: #bdc3c7;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-box">
+      <h2>Masuk Permainan Checkers</h2>
+      <input type="text" id="username" placeholder="Masukkan nama">
+      <button onclick="login()">Masuk</button>
+      <p>&copy; abbialka satrio XI-RPL 2025</p>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div id="game-screen">
+    <button id="logout-btn" onclick="logout()">Logout</button>
+    <h2>Checkers: Lompat, Bunuh, dan Skor</h2>
+    <div id="scoreboard">Merah: 0 | Hitam: 0</div>
+    <div id="board"></div>
+    <div id="winner"></div>
+    <footer>&copy; abbialka satrio XI-RPL 2025.</footer>
+  </div>
+
+  <!-- LOGOUT CONFIRMATION -->
+  <div id="logout-confirmation">
+    <div class="confirm-box">
+      <h3>Apakah Anda yakin ingin logout?</h3>
+      <button class="btn-yes" onclick="confirmLogout()">YA</button>
+      <button class="btn-no" onclick="cancelLogout()">TIDAK</button>
+    </div>
+  </div>
+
+  <script>
+    // Login logic
+    function login() {
+      const username = document.getElementById("username").value.trim();
+      if (username !== "") {
+        document.getElementById("login-screen").style.display = "none";
+        document.getElementById("game-screen").style.display = "block";
+      } else {
+        alert("Silakan masukkan nama terlebih dahulu.");
+      }
+    }
+
+    function logout() {
+      document.getElementById("logout-confirmation").style.display = "flex";
+    }
+
+    function confirmLogout() {
+      location.reload();
+    }
+
+    function cancelLogout() {
+      document.getElementById("logout-confirmation").style.display = "none";
+    }
+
+    // Permainan Checkers
+    const board = document.getElementById("board");
+    const scoreboard = document.getElementById("scoreboard");
+    const winnerDisplay = document.getElementById("winner");
+    const squares = [];
+    let selectedPiece = null;
+    let currentPlayer = "red";
+    let moveHints = [];
+    let redScore = 0;
+    let blackScore = 0;
+
+    function updateScoreboard() {
+      scoreboard.textContent = `Merah: ${redScore} | Hitam: ${blackScore}`;
+    }
+
+    function checkWinner() {
+      const redPieces = document.querySelectorAll(".piece.red").length;
+      const blackPieces = document.querySelectorAll(".piece.black").length;
+
+      if (redPieces === 0) {
+        winnerDisplay.textContent = "Hitam Menang!";
+      } else if (blackPieces === 0) {
+        winnerDisplay.textContent = "Merah Menang!";
+      }
+    }
+
+    function addPiece(square, color) {
+      const piece = document.createElement("div");
+      piece.className = "piece " + color;
+      square.appendChild(piece);
+    }
+
+    function promoteToKing(piece, row) {
+      if ((piece.classList.contains("red") && row === 0) ||
+          (piece.classList.contains("black") && row === 7)) {
+        piece.classList.add("king");
+        const indicator = document.createElement("div");
+        indicator.className = "king-indicator";
+        piece.innerHTML = "";
+        piece.appendChild(indicator);
+      }
+    }
+
+    function getSquare(row, col) {
+      return squares.find(sq => +sq.dataset.row === row && +sq.dataset.col === col);
+    }
+
+    function clearHints() {
+      moveHints.forEach(item => {
+        const dot = item.square.querySelector(".dot");
+        if (dot) dot.remove();
+      });
+      moveHints = [];
+    }
+
+    function showMoveHints(piece, fromRow, fromCol) {
+      clearHints();
+      const isRed = piece.classList.contains("red");
+      const isKing = piece.classList.contains("king");
+      const enemyColor = isRed ? "black" : "red";
+
+      const directions = isKing
+        ? [
+            { rowOffset: -1, colOffset: -1 },
+            { rowOffset: -1, colOffset: 1 },
+            { rowOffset: 1, colOffset: -1 },
+            { rowOffset: 1, colOffset: 1 },
+            { rowOffset: -2, colOffset: -2 },
+            { rowOffset: -2, colOffset: 2 },
+            { rowOffset: 2, colOffset: -2 },
+            { rowOffset: 2, colOffset: 2 },
+          ]
+        : [
+            { rowOffset: isRed ? -1 : 1, colOffset: -1 },
+            { rowOffset: isRed ? -1 : 1, colOffset: 1 },
+            { rowOffset: isRed ? -2 : 2, colOffset: -2 },
+            { rowOffset: isRed ? -2 : 2, colOffset: 2 },
+          ];
+
+      directions.forEach(dir => {
+        const toRow = fromRow + dir.rowOffset;
+        const toCol = fromCol + dir.colOffset;
+        const target = getSquare(toRow, toCol);
+        if (!target || target.children.length > 0) return;
+
+        if (Math.abs(dir.rowOffset) === 1) {
+          const dot = document.createElement("div");
+          dot.className = "dot";
+          target.appendChild(dot);
+          moveHints.push({ square: target, removeEnemy: null });
+        }
+
+        if (Math.abs(dir.rowOffset) === 2) {
+          const midRow = fromRow + dir.rowOffset / 2;
+          const midCol = fromCol + dir.colOffset / 2;
+          const middle = getSquare(midRow, midCol);
+          if (
+            middle &&
+            middle.children[0] &&
+            middle.children[0].classList.contains(enemyColor)
+          ) {
+            const dot = document.createElement("div");
+            dot.className = "dot";
+            target.appendChild(dot);
+            moveHints.push({ square: target, removeEnemy: middle });
+          }
+        }
+      });
+    }
+
+    function onSquareClick(square) {
+      const piece = square.querySelector(".piece");
+
+      if (selectedPiece) {
+        const move = moveHints.find(m => m.square === square);
+        if (move) {
+          if (move.removeEnemy) {
+            const enemy = move.removeEnemy.querySelector(".piece");
+            if (enemy) {
+              enemy.remove();
+              if (enemy.classList.contains("black")) redScore++;
+              if (enemy.classList.contains("red")) blackScore++;
+              updateScoreboard();
+            }
+          }
+
+          square.appendChild(selectedPiece);
+          const targetRow = +square.dataset.row;
+          promoteToKing(selectedPiece, targetRow);
+          selectedPiece.classList.remove("selected");
+          selectedPiece = null;
+          clearHints();
+          checkWinner();
+          currentPlayer = currentPlayer === "red" ? "black" : "red";
+        } else {
+          selectedPiece.classList.remove("selected");
+          selectedPiece = null;
+          clearHints();
+        }
+      } else if (piece && piece.classList.contains(currentPlayer)) {
+        selectedPiece = piece;
+        piece.classList.add("selected");
+        const row = +square.dataset.row;
+        const col = +square.dataset.col;
+        showMoveHints(piece, row, col);
+      }
+    }
+
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const square = document.createElement("div");
+        square.className = "square " + ((row + col) % 2 === 0 ? "light" : "dark");
+        square.dataset.row = row;
+        square.dataset.col = col;
+        board.appendChild(square);
+        squares.push(square);
+
+        if ((row + col) % 2 === 1) {
+          if (row < 3) addPiece(square, "black");
+          else if (row > 4) addPiece(square, "red");
+        }
+
+        square.addEventListener("click", () => onSquareClick(square));
+      }
+    }
+
+    updateScoreboard();
+  </script>
+</body>
+</html>
